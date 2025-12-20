@@ -1,6 +1,4 @@
-# Template
-
-Template repository.
+# Games
 
 ## License
 
