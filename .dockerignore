@@ -1,0 +1,14 @@
+.git
+.gitignore
+.github
+build
+.dart_tool
+.devcontainer
+.packages
+.idea
+.vscode
+android
+ios
+linux
+macos
+windows
