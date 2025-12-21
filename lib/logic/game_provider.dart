@@ -207,7 +207,10 @@ class GameProvider extends ChangeNotifier {
       _spawnShapes();
     }
 
+    _checkGameOver();
+
     clearHoverState();
+    notifyListeners();
   }
 
   void _checkGameOver() {
@@ -218,13 +221,12 @@ class GameProvider extends ChangeNotifier {
         for (int x = 0; x < gridSize; x++) {
           if (canPlaceShape(shape, x, y)) {
             isGameOver = false;
-            return; // EARLY EXIT — critical
+            return;
           }
         }
       }
     }
 
-    // If we reach here, nothing fit
     isGameOver = true;
   }
 }
