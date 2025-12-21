@@ -44,40 +44,65 @@ class GameScreen extends StatelessWidget {
     double gridCellSize = (screenWidth - 32) / 8;
 
     return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(left: 16),
+              child: Text(
+                'BLOCK PUZZLE',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            const Spacer(),
+            Text(
+              'Score: ${game.score}',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.amber,
+              ),
+            ),
+            const Spacer(),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Restart Game',
+            onPressed: game.restartGame,
+          ),
+        ],
+      ),
       body: Center(
         child: SizedBox(
           width: contentWidth,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Header / Score
-              Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text("BLOCK PUZZLE",
-                        style: TextStyle(
-                            fontSize: 24, fontWeight: FontWeight.bold)),
-                    Text("Score: ${game.score}",
-                        style:
-                            const TextStyle(fontSize: 20, color: Colors.amber)),
-                  ],
-                ),
-              ),
-
               if (game.isGameOver)
                 Container(
-                  padding: const EdgeInsets.all(20),
-                  color: Colors.red.withValues(alpha: 0.8),
+                  margin: const EdgeInsets.symmetric(vertical: 20),
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: Column(
                     children: [
-                      const Text("GAME OVER",
-                          style: TextStyle(
-                              fontSize: 30, fontWeight: FontWeight.bold)),
-                      ElevatedButton(
-                          onPressed: game.restartGame,
-                          child: const Text("Restart"))
+                      const Text(
+                        "GAME OVER",
+                        style: TextStyle(
+                            fontSize: 30, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: game.restartGame,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text("Restart"),
+                      ),
                     ],
                   ),
                 ),
