@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../logic/game_provider.dart'; // Import Provider
+import '../logic/game_provider.dart';
 import '../logic/shapes.dart';
 
 class DraggableShapeItem extends StatelessWidget {
@@ -24,17 +24,18 @@ class DraggableShapeItem extends StatelessWidget {
       if (p.y > h) h = p.y;
     }
 
-    Widget shapeWidget = SizedBox(
+    // Render blocks with the SAME inset/size as board cells (margin = 2px -> visible = cellSize-4)
+    final shapeVisual = SizedBox(
       width: (w + 1) * cellSize,
       height: (h + 1) * cellSize,
       child: Stack(
         children: shape.points.map((p) {
           return Positioned(
-            left: p.x * cellSize,
-            top: p.y * cellSize,
+            left: p.x * cellSize + 2, // match board inset
+            top: p.y * cellSize + 2, // match board inset
             child: Container(
-              width: cellSize - 2,
-              height: cellSize - 2,
+              width: cellSize - 4, // match board visible size
+              height: cellSize - 4, // match board visible size
               decoration: BoxDecoration(
                 color: shape.color,
                 borderRadius: BorderRadius.circular(4),
@@ -45,20 +46,62 @@ class DraggableShapeItem extends StatelessWidget {
       ),
     );
 
-    return Draggable<Map<String, dynamic>>(
-      data: {'shape': shape, 'index': shapeIndex},
-      // --- NEW: Notify provider on drag start/cancel ---
-      onDragStarted: () {
-        Provider.of<GameProvider>(context, listen: false).startDragging(shape);
+    // RELIABLE capture of the press using Listener (fires before Draggable's recognizer)
+    final pressAwareShape = Listener(
+      behavior: HitTestBehavior.opaque,
+      onPointerDown: (event) {
+        final gp = Provider.of<GameProvider>(context, listen: false);
+        final local = event.localPosition;
+
+        // 1) Pixel offset: used for feedback anchoring so the pressed pixel stays under the cursor
+        gp.setPickupPixelOffset(local);
+
+        // 2) Pick the *nearest occupied block* (avoid gaps that cause TL bias)
+        Point nearest = shape.points.first;
+        double best = double.infinity;
+        for (final p in shape.points) {
+          // Centers are unaffected by the 2px inset:
+          // (p.x*cellSize + 2) + (cellSize-4)/2 == p.x*cellSize + cellSize/2
+          final cx = (p.x + 0.5) * cellSize;
+          final cy = (p.y + 0.5) * cellSize;
+          final dx = local.dx - cx;
+          final dy = local.dy - cy;
+          final d2 = dx * dx + dy * dy;
+          if (d2 < best) {
+            best = d2;
+            nearest = Point(p.x, p.y);
+          }
+        }
+        gp.setPickupOffset(nearest);
       },
-      onDraggableCanceled: (_, __) {
-        // If dropped outside the board, reset state
-        Provider.of<GameProvider>(context, listen: false).clearHoverState();
+      child: shapeVisual,
+    );
+
+    return Consumer<GameProvider>(
+      builder: (context, gp, _) {
+        final off = gp.pickupPixelOffset ?? Offset.zero;
+
+        return Draggable<Map<String, dynamic>>(
+          data: {'shape': shape, 'index': shapeIndex},
+
+          // Anchor at child's top-left, then shift feedback so pressed pixel stays under pointer
+          dragAnchorStrategy: childDragAnchorStrategy,
+          feedbackOffset: Offset(-off.dx, -off.dy),
+
+          onDragStarted: () {
+            // Start dragging, but DO NOT overwrite offsets here.
+            Provider.of<GameProvider>(context, listen: false)
+                .startDragging(shape);
+          },
+          onDraggableCanceled: (_, __) {
+            Provider.of<GameProvider>(context, listen: false).clearHoverState();
+          },
+
+          feedback: Opacity(opacity: 0.8, child: shapeVisual),
+          childWhenDragging: Opacity(opacity: 0.3, child: shapeVisual),
+          child: pressAwareShape,
+        );
       },
-      // --------------------------------------------------
-      feedback: Opacity(opacity: 0.8, child: shapeWidget),
-      childWhenDragging: Opacity(opacity: 0.3, child: shapeWidget),
-      child: shapeWidget,
     );
   }
 }

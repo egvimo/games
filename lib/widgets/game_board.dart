@@ -43,71 +43,88 @@ class GameBoard extends StatelessWidget {
   }
 
   // Pass the gameProvider in directly
-  Widget _buildCell(BuildContext context, int x, int y, double size,
-      Color? actualColor, GameProvider gameProvider) {
-    return DragTarget<Map<String, dynamic>>(onWillAcceptWithDetails: (details) {
-      final data = details.data;
 
-      final BlockShape shape = data['shape'];
+  Widget _buildCell(
+    BuildContext context,
+    int x,
+    int y,
+    double size,
+    Color? actualColor,
+    GameProvider gameProvider,
+  ) {
+    return DragTarget<Map<String, dynamic>>(
+      onWillAcceptWithDetails: (details) {
+        final data = details.data;
+        final BlockShape shape = data['shape'];
 
-      // Update hover preview
-      Provider.of<GameProvider>(context, listen: false).updateHover(x, y);
+        final pickup = gameProvider.pickupOffset ?? const Point(0, 0);
+        final anchorX = x - pickup.x;
+        final anchorY = y - pickup.y;
 
-      return gameProvider.canPlaceShape(shape, x, y);
-    },
-        // Fix from previous turn: use onAcceptWithDetails
-        onAcceptWithDetails: (details) {
-      BlockShape shape = details.data['shape'];
-      int index = details.data['index'];
-      // placeShape now handles clearing hover state on success
-      Provider.of<GameProvider>(context, listen: false)
-          .placeShape(shape, x, y, index);
-    }, builder: (context, candidateData, rejectedData) {
-      Color displayColor = actualColor ?? Colors.grey[800]!;
-      int highlightState = gameProvider.getHighlightState(x, y);
+        Provider.of<GameProvider>(context, listen: false)
+            .updateHover(anchorX, anchorY);
+        return gameProvider.canPlaceShape(shape, anchorX, anchorY);
+      },
+      onAcceptWithDetails: (details) {
+        final BlockShape shape = details.data['shape'];
+        final int index = details.data['index'];
 
-      // --- NEW: Animation logic ---
-      bool isClearing = gameProvider.clearingCells.contains(Point(x, y));
+        final pickup = gameProvider.pickupOffset ?? const Point(0, 0);
+        final anchorX = x - pickup.x;
+        final anchorY = y - pickup.y;
 
-      Widget cellChild = Container(
-        decoration: BoxDecoration(
-          color: isClearing ? Colors.white : displayColor,
-          borderRadius: BorderRadius.circular(4),
-          // Add a glow effect during clearing
-          boxShadow: isClearing
-              ? [
-                  BoxShadow(
+        Provider.of<GameProvider>(context, listen: false)
+            .placeShape(shape, anchorX, anchorY, index);
+      },
+      builder: (context, candidateData, rejectedData) {
+        Color displayColor = actualColor ?? Colors.grey[800]!;
+        int highlightState = gameProvider.getHighlightState(x, y);
+
+        bool isClearing = gameProvider.clearingCells.contains(Point(x, y));
+
+        // Base (clearing) block
+        Widget cellChild = Container(
+          margin: const EdgeInsets.all(
+              2), // <-- use margin instead of outer padding
+          decoration: BoxDecoration(
+            color: isClearing ? Colors.white : displayColor,
+            borderRadius: BorderRadius.circular(4),
+            boxShadow: isClearing
+                ? [
+                    BoxShadow(
                       color: Colors.white.withValues(alpha: 0.8),
                       blurRadius: 10,
-                      spreadRadius: 2)
-                ]
-              : null,
-        ),
-      );
-
-      // Apply highlight logic for dragging
-      if (!isClearing) {
-        if (highlightState == 1) {
-          displayColor = Colors.white.withValues(alpha: 0.6);
-        } else if (highlightState == 2) {
-          displayColor = Colors.redAccent.withValues(alpha: 0.6);
-        }
-
-        cellChild = Container(
-          decoration: BoxDecoration(
-            color: displayColor,
-            borderRadius: BorderRadius.circular(4),
+                      spreadRadius: 2,
+                    )
+                  ]
+                : null,
           ),
         );
-      }
 
-      return AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        width: size,
-        height: size,
-        padding: const EdgeInsets.all(2),
-        child: cellChild,
-      );
-    });
+        // Hover highlight (valid/invalid)
+        if (!isClearing) {
+          if (highlightState == 1) {
+            displayColor = Colors.white.withValues(alpha: 0.6);
+          } else if (highlightState == 2) {
+            displayColor = Colors.redAccent.withValues(alpha: 0.6);
+          }
+          cellChild = Container(
+            margin: const EdgeInsets.all(2), // <-- same margin here
+            decoration: BoxDecoration(
+              color: displayColor,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          );
+        }
+
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          width: size,
+          height: size,
+          // IMPORTANT: no padding here anymore
+          child: cellChild,
+        );
+      },
+    );
   }
 }

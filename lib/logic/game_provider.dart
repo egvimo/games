@@ -18,6 +18,19 @@ class GameProvider extends ChangeNotifier {
   BlockShape? _draggingShape;
   bool _isHoverValid = false;
 
+  Point? _pickupOffset;
+  Point? get pickupOffset => _pickupOffset;
+  void setPickupOffset(Point p) {
+    _pickupOffset = p;
+  }
+
+  Offset? _pickupPixelOffset;
+  Offset? get pickupPixelOffset => _pickupPixelOffset;
+  void setPickupPixelOffset(Offset o) {
+    _pickupPixelOffset = o;
+    notifyListeners();
+  }
+
   GameProvider() {
     _spawnShapes();
   }
@@ -48,6 +61,8 @@ class GameProvider extends ChangeNotifier {
     _draggingShape = null;
     _hoverAnchorCell = null;
     _isHoverValid = false;
+    _pickupOffset = null;
+    _pickupPixelOffset = null;
     notifyListeners();
   }
 
