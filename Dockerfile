@@ -8,7 +8,8 @@ RUN flutter build web --release
 
 FROM caddy:alpine
 
-RUN addgroup -g 1000 app \
+RUN setcap -r /usr/bin/caddy \
+    && addgroup -g 1000 app \
     && adduser -u 1000 -G app -s /bin/bash -D app \
     && chown -R app:app /data /srv
 
